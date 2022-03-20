@@ -1,44 +1,72 @@
 import cv2 as cv
+import numpy as np
 
 
-def show_Lplate(picture):
-    'rendszám-tábla detektálása ( eredményként egy maszkot ad vissza )'
+def show_lplate(picture, showme=False):
+    'rendszám-tábla detektálása ( eredménynek a rendszám-táblát és sarokpontjait adja vissza )'
 
     # Kép megnyitása -> szürke árnyalat-> átméretezés
     img = cv.imread(picture, cv.IMREAD_COLOR)
-    img = cv.resize(img, (800, 800))
-    img_act = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+    img = cv.resize(img, None,fx=0.15,fy=0.15)
+    img_gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 
     # Zajcsökkentés
-    img_act = cv.bilateralFilter(img_act, 5, 100, 500)
+    img_bil = cv.bilateralFilter(img_gray, 4, 100, 200)
 
     # Éldetektálás
-    img_act = cv.Canny(img_act, 0, 250, None)
+    img_canny = cv.Canny(img_bil, 100, 200)
 
     # Contúrok detektálása
-    contours, hierarchy = cv.findContours(img_act, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv.findContours(img_canny, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
     contureSizes = []
 
     for i in range(len(contours)):
         size = cv.contourArea(contours[i])
         contureSizes.append((size, i))
+
     contureSizes.sort(reverse=True)
 
-    # találatok tesztelése
-    chek: int
-    for i in range(10):
-        chek = contureSizes[i][1]
-        break
+    # találatok tesztelése ! FEJLESZTÉS ALATT !
+    lplate: int
+    for i in range(1):
+        lplate = contureSizes[i][1]
+        # if test:
+        #   break
+        # return ERROR
 
-    #Rendszám kirajzolása, maszk létrehozása
-    cv.drawContours(img, contours, chek, (0, 0, 255), -1)
+    #Masz készítés
+    img_mask=np.ndarray((img.shape), np.uint8)
+    img_mask.fill(0)
+    cv.drawContours(img_mask, contours, lplate, (255, 255, 255), -1)
 
+    #Hibák vágása ( finomítás)
+    kernel = np.ones((5, 5), np.uint8)
+    img_morph = cv.morphologyEx(img_mask, cv.MORPH_OPEN, kernel)
+    img_morph = cv.cvtColor(img_morph, cv.COLOR_RGBA2GRAY)
 
-    return img
+    #sarokdetekktálás
+    corners = cv.cornerHarris(img_morph, 5, 5, 0.05)
 
+    #RSZ kivágás
+    img_gray[img_morph < 255] = 0
+
+    if showme:
+        cv.imshow('show_Lplate', img_gray)
+        cv.waitKey()
+
+    return img_gray, corners
+
+def rszNorm(picture,corners):
+    'Méretezi és pozícionálja a rendszámot'
+
+    # picture[corners>0.01*corners.max()] = 255
+    # cv.imshow('norm',picture)
+    # cv.waitKey()
 
 
 if __name__ == "__main__":
-    cv.imshow('Picure', show_Lplate('rszimg/rsz_test_3.jpg'))
-    cv.waitKey(0)
+    for i in range(1):
+        lplate, corners = show_lplate('rszimg/rsz_test_'+str(i+1)+'.jpg', True)
+        rszNorm(lplate, corners)
+
     cv.destroyAllWindows()
