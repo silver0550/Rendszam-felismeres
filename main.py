@@ -2,9 +2,11 @@ import cv2 as cv
 import license_plate_detecting as lpd
 import license_plate_transform as lpt
 
+test = lpd.LicenceDet('rszimg/rsz_test_1.jpg')
+test.do_it()
+test.showLP()
+lplate = test.get_img()
+corners = test.get_corners()
 
-if __name__ == "__main__":
-    for i in range(1):
-        lplate, corners = lpd.get_lplate('rszimg/rsz_test_'+str(i+1)+'.jpg',True)
-        lplate = lpt.lp_transfer(lplate, corners, True)
+lplate = lpt.lp_transfer(lplate, corners, True)
 
