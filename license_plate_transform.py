@@ -1,132 +1,156 @@
 import cv2 as cv
 import numpy as np
 
+class LicenceTrans:
+    """ Méretezi és pozícionálja a rendszámot """
 
-def create_point(corners):
-    ' Összepárosítja a koordinátákat '
+    def __init__(self, lpimg, crns):
+        self.masked_lplate = lpimg
+        self.corners = np.where(crns > 0)                     # sarkok helyének meghatározása
+        #self.pair = []
+        #self.lic_plate4points = []
 
-    points = []
-    for i in range(len(corners[0])):
-        pont = (corners[1][i], corners[0][i])
-        points.append(pont)
-    return points
+    def create_point(self):
+        """ Összepárosítja a koordinátákat """
 
+        self.pair = []
+        for i in range(len(self.corners[0])):
+            pont = (self.corners[1][i], self.corners[0][i])
+            self.pair.append(pont)
 
-def distance_p2p(pt1, pt2, max_d=0):
-    ' Igaz, ha a 2 pont között maximum max_d a távolság'
+    def distance_p2p(self, pt1, pt2, max_d=-1):
+        """ Igaz, ha a 2 pont között nagyobb a távolság mint max_d """
 
-    distance = np.sqrt((pt2[0] - pt1[0]) ** 2 + (pt2[1] - pt1[1]) ** 2)
-    if max_d <= 0:
-        return distance
-    else:
-        return distance <= max_d
+        distance = np.sqrt((pt2[0] - pt1[0]) ** 2 + (pt2[1] - pt1[1]) ** 2)
+        if max_d < 0:
+            return distance
+        else:
+            return distance <= max_d
 
+    def avg(self, pont_list):
+        """ Pontokat tartalmazó lista átlagát adja eredményül """
+        sumx = 0
+        sumy = 0
+        if len(pont_list) == 0:
+            return False
 
-def avg(pont_list):
-    ' Pontokat tartalmazó lista átlagát adja eredményül'
-    sumx = 0
-    sumy = 0
-    if len(pont_list) == 0:
-        return False
+        for i in range(len(pont_list)):
+            sumx += pont_list[i][0]
+            sumy += pont_list[i][1]
+        x = int(sumx / len(pont_list))
+        y = int(sumy / len(pont_list))
 
-    for i in range(len(pont_list)):
-        sumx += pont_list[i][0]
-        sumy += pont_list[i][1]
-    x = int(sumx / len(pont_list))
-    y = int(sumy / len(pont_list))
+        return (x, y)
 
-    return (x, y)
+    def group_corners(self):
+        """Sarkok definiálása"""                                    # sarok csoportosítása
 
+        self.before_transfer = []
 
-def group_corners(point_corners):
-    'Sarkok definiálása'  # sarok csoportosítása
+        while True:
+            ref_point = None
+            point = []
+            delete_list = []
 
-    fourpoint = []
-
-    while True:
-        ref_point = None
-        point = []
-        delete_list = []
-
-        for i in point_corners:  # az egymáshoz közeli pontok csoportba rendezése
-            if ref_point == None:
-                ref_point = point_corners[0]
-                point.append(ref_point)
-
-            else:
-                if distance_p2p(ref_point, i, 20):
-                    point.append(i)
+            for i in self.pair:                                     # az egymáshoz közeli pontok csoportba rendezése
+                if ref_point == None:
+                    ref_point = self.pair[0]
+                    point.append(ref_point)
 
                 else:
-                    delete_list.append(i)
+                    if self.distance_p2p(ref_point, i, 20):
+                        point.append(i)
 
-        point_corners = delete_list
-        fourpoint.append(avg(point))  # 1 sarokhoz tartozó pontokból 1 pont kijelölése
+                    else:
+                        delete_list.append(i)
 
-        if len(point_corners) == 0:
-            break
+            self.pair = delete_list
+            self.before_transfer.append(self.avg(point))            # 1 sarokhoz tartozó pontokból 1 pont kijelölése
 
-    return fourpoint
-
-
-def order_corners(corners):
-    ' Sarkok elhelyezése ( Top Left, Bottom Left, Top Right, Bottom Right )'
-
-    if len(corners) != 4:  # ! hiba kezelése !
-        print('error')
-        return 'number error'
-
-    corners.sort()
-
-    if corners[0][1] > corners[1][1]:
-        corners[0], corners[1] = corners[1], corners[0]
-
-    if corners[2][1] > corners[3][1]:
-        corners[2], corners[3] = corners[3], corners[2]
-
-    return corners
+            if len(self.pair) == 0:
+                break
 
 
-def new_points(befor_transfer):
-    ' Meghatározza a transofmáció utáni sarokpontokat '
+    def order_corners(self):
+        """Sarkok sorba rendezése ( Top Left, Bottom Left, Top Right, Bottom Right )"""
 
-    bigger_edge = []  # leghosszabb élek meghatározása     ! Szebb megoldást keresni !
-
-    ab = distance_p2p(befor_transfer[0], befor_transfer[1])
-    ac = distance_p2p(befor_transfer[0], befor_transfer[2])
-    bd = distance_p2p(befor_transfer[1], befor_transfer[3])
-    cd = distance_p2p(befor_transfer[2], befor_transfer[3])
-
-    if ac > bd:
-        bigger_edge.append(ac)
-    else:
-        bigger_edge.append(bd)
-    if ab > cd:
-        bigger_edge.append(ab)
-    else:
-        bigger_edge.append(cd)
-
-    after_transfer = [(0, 0), (0, bigger_edge[1]), (bigger_edge[0], 0), (bigger_edge[0], bigger_edge[1])]
-
-    return np.float32(after_transfer), (int(bigger_edge[0]), int(bigger_edge[1]))
+        if len(self.before_transfer) != 4:  # ! hiba kezelése !
+            print('! 4 Point error !')
 
 
-def lp_transfer(picture, corners,showme=False):
-    'Méretezi és pozícionálja a rendszámot, eredményül a rendszám képét adja'
+        self.before_transfer.sort()
 
-    corners = np.where(corners > 0)                     # sarkok helyének meghatározása
-    corners= create_point(corners)                      # koordináták párosítása tuplebe
-    pts_before = group_corners(corners)                 # sarokpontok csoporjának középpontja
-    pts_before = np.float32(order_corners(pts_before))  # sarokpontok sorrendje
-    pts_after, size = new_points(pts_before)            # pontok eltolt pozíció
+        if self.before_transfer[0][1] > self.before_transfer[1][1]:
+            self.before_transfer[0], self.before_transfer[1] = self.before_transfer[1], self.before_transfer[0]
 
-    matrix = cv.getPerspectiveTransform(pts_before,pts_after)       # perspektíva számolása
-    result = cv.warpPerspective(picture, matrix, size)              # transformálás
-    _, result = cv.threshold(result, 127, 255, cv.THRESH_BINARY)
+        if self.before_transfer[2][1] > self.before_transfer[3][1]:
+            self.before_transfer[2], self.before_transfer[3] = self.before_transfer[3], self.before_transfer[2]
 
-    if showme:
-        cv.imshow('lp_transfer',result)
+        self.before_transfer= np.float32(self.before_transfer)
+
+    def new_points(self):
+        """ Meghatározza a transofmáció utáni sarokpontokat """
+
+        bigger_edge = []  # leghosszabb élek meghatározása     ! Szebb megoldást keresni !
+
+        ab = self.distance_p2p(self.before_transfer[0], self.before_transfer[1])
+        ac = self.distance_p2p(self.before_transfer[0], self.before_transfer[2])
+        bd = self.distance_p2p(self.before_transfer[1], self.before_transfer[3])
+        cd = self.distance_p2p(self.before_transfer[2], self.before_transfer[3])
+
+        if ac > bd:
+            bigger_edge.append(ac)
+        else:
+            bigger_edge.append(bd)
+        if ab > cd:
+            bigger_edge.append(ab)
+        else:
+            bigger_edge.append(cd)
+
+        self.after_transfer = [(0, 0), (0, bigger_edge[1]), (bigger_edge[0], 0), (bigger_edge[0], bigger_edge[1])]
+        self.after_transfer = np.float32(self.after_transfer)
+        self.after_size = (int(bigger_edge[0]), int(bigger_edge[1]))
+
+    def transform(self):
+        """Transformálás végrehajtása"""
+
+        matrix = cv.getPerspectiveTransform(self.before_transfer, self.after_transfer)          # perspektíva számolása
+        self.result = cv.warpPerspective(self.masked_lplate, matrix, self.after_size)           # transformálás
+        _, self.result = cv.threshold(self.result, 127, 255, cv.THRESH_BINARY)
+
+
+    def show_transfer(self):
+        cv.imshow('show_transfer', self.result)
         cv.waitKey()
         cv.destroyAllWindows()
 
-    return result
+    def do_it(self):
+        self.create_point()                                     # koordináták párosítása tuplebe
+        self.group_corners()                                    # sarokpontok csoporjának középpontja
+        try:
+            self.order_corners()                                # sarokpontok sorrendje
+            self.new_points()                                   # pontok eltolt pozíciójának számolása
+            self.transform()                                    # transformálás végrehajtása
+        except:
+            self.result= np.ones(self.masked_lplate.shape)
+
+
+
+if __name__ == "__main__":
+    import license_plate_detecting as lpd
+
+    test = lpd.LicenceDet('rsz_test_1.jpg')
+    test.do_it()
+    #test.show_corners()
+    sarok = test.get_corners()
+    maszkolt = test.get_img()
+    test.showLP()
+
+    test2 = LicenceTrans(maszkolt, sarok)
+    # test2.create_point()
+    # test2.group_corners()
+    # test2.order_corners()
+    # test2.new_points()
+    # test2.transform()
+    test2.do_it()
+    test2.show_transfer()
