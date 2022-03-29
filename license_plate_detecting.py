@@ -16,8 +16,13 @@ class LicenceDet:
         self.biggest_contour = None
         self.config_contours = None
         self.config_cubesize = (5, 5)
-        self.config_sensitivity = 0.08
+        self.config_sensitivity = 0.06
         self.config_corners = None
+
+    def show_config(self):
+        print('Szűrő:\t"Bilateral filter"\tbeállításai: ', self.config_bilfil)
+        print('Éldetektálás:\t"Canny"\tbeállításai: ', self.config_canny)
+        print('Sarok detektálás:\t "Harris"\tbeállításai: ', self.config_cubesize, self.config_sensitivity)
 
     # Méret
     def get_size(self):
@@ -72,8 +77,9 @@ class LicenceDet:
         cv.drawContours(self.img_mask, self.config_contours, self.biggest_contour, (255, 255, 255), -1)
 
         # Hibák vágása ( finomítás )
-        kernel = np.ones((5, 5), np.uint8)
+        kernel = np.ones((10, 10), np.uint8)
         self.img_mask = cv.morphologyEx(self.img_mask, cv.MORPH_OPEN, kernel)
+
 
     # Sarok detekktálás
     def get_corneratrib(self):
@@ -103,7 +109,7 @@ class LicenceDet:
     def get_img(self):
         return cv.cvtColor(self.img, cv.COLOR_BGR2GRAY)
 
-    def showLP(self):
+    def show(self):
         cv.imshow('showLP', self.img)
         print('A kép méretei: ', self.img.shape)
         cv.waitKey()
