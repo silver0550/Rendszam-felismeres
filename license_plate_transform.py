@@ -6,9 +6,8 @@ class LicenceTrans:
 
     def __init__(self, lpimg, crns):
         self.masked_lplate = lpimg
-        self.corners = np.where(crns > 0)                     # sarkok helyének meghatározása
-        #self.pair = []
-        #self.lic_plate4points = []
+        self.corners = np.where(crns > 0)       # sarkok helyének meghatározása
+        self.error = (False, None, None)
 
     def create_point(self):
         """ Összepárosítja a koordinátákat """
@@ -75,7 +74,7 @@ class LicenceTrans:
         """Sarkok sorba rendezése ( Top Left, Bottom Left, Top Right, Bottom Right )"""
 
         if len(self.before_transfer) != 4:  # ! hiba kezelése !
-            print('! 4 Point error !')
+            self.error = (True, '! 4 Point error !', 'transform/order_corners')
 
 
         self.before_transfer.sort()
@@ -118,11 +117,16 @@ class LicenceTrans:
         self.result = cv.warpPerspective(self.masked_lplate, matrix, self.after_size)           # transformálás
         _, self.result = cv.threshold(self.result, 127, 255, cv.THRESH_BINARY)
 
+    def get_img(self):
+        return self.result
 
-    def show_transfer(self):
+    def show(self):
         cv.imshow('show_transfer', self.result)
         cv.waitKey()
         cv.destroyAllWindows()
+
+    def get_error(self):
+        return self.error
 
     def do_it(self):
         self.create_point()                                     # koordináták párosítása tuplebe
@@ -132,7 +136,7 @@ class LicenceTrans:
             self.new_points()                                   # pontok eltolt pozíciójának számolása
             self.transform()                                    # transformálás végrehajtása
         except:
-            self.result= np.ones(self.masked_lplate.shape)
+            self.result= cv.imread('fail.jpg')
 
 
 
@@ -147,10 +151,5 @@ if __name__ == "__main__":
     test.showLP()
 
     test2 = LicenceTrans(maszkolt, sarok)
-    # test2.create_point()
-    # test2.group_corners()
-    # test2.order_corners()
-    # test2.new_points()
-    # test2.transform()
     test2.do_it()
     test2.show_transfer()
