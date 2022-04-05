@@ -111,7 +111,6 @@ class LicenceDet:
 
     def show(self):
         cv.imshow('showLP', self.img)
-        print('A kép méretei: ', self.img.shape)
         cv.waitKey()
         cv.destroyAllWindows()
 
@@ -126,7 +125,14 @@ class LicenceDet:
 
 
 if __name__ == "__main__":
-    test1 = LicenceDet('rsz_test_3.jpg')
-    test1.do_it()
-    test1.show_corners()
-    test1.showLP()
+    test1 = LicenceDet('rszimg/rsz_test_10.jpg')
+    test1.gray()
+    test1.bilfil()
+    test1.canny()
+    test1.contour_detect()
+    test1.mask()
+    #test1.cut_the_mask()
+    # test1.corners()
+    # test1.show_corners()
+    # test1.do_it()
+    test1.show()

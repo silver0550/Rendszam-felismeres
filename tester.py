@@ -1,31 +1,28 @@
 import license_plate_detecting as lpd
 import license_plate_transform as lpt
+import main
 
-
-tester = {}
-i = 0
-while True:
-    i += 1
-    try:
-        detect = lpd.LicenceDet('rszimg/rsz_test_' + str(i) + '.jpg')
-        #detect.set_corneratrib((5, 5), 0.1)
+def step2step(number):
+    for i in range(number):
+        print(i+49)
+        detect = lpd.LicenceDet('rszimg/rsz_test_' + str(i+49) + '.jpg')
         detect.do_it()
+        #detect.show()
 
-        transform = lpt.LicenceTrans(detect.get_img(), detect.get_corners())
-        transform.do_it()
-        #transform.show()
-        tester[i] = transform.get_error()
+        lpimg = detect.get_img()
+        crns = detect.get_corners()
+        transf = lpt.LicenceTrans(lpimg, crns)
+        transf.do_it()
+        print(main.get_licence_plate('rszimg/rsz_test_' + str(i+49) + '.jpg'))
+        transf.show()
 
-    except:
-        break
+def finaly_test(number):
+    for i in range(number):
+        text = main.get_licence_plate('rszimg/rsz_test_' + str(i+1) + '.jpg')
+        if len(text) == 0:
+            print('Sikertelen')
+        else:
+            print(text)
 
-errors = []
-for i in tester:
-    if tester[i][0]:
-       errors.append(i)
-
-print('hibák száma: ', len(errors))
-if len(errors):
-    print('Hibás átalakítások: ')
-    for i in errors:
-         print('rsz_test_'+str(i), '\tHiba típusa: ', tester[i][1])
+#step2step(66)
+finaly_test(66)

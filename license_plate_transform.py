@@ -106,16 +106,22 @@ class LicenceTrans:
         else:
             bigger_edge.append(cd)
 
-        self.after_transfer = [(0, 0), (0, bigger_edge[1]), (bigger_edge[0], 0), (bigger_edge[0], bigger_edge[1])]
+        self.after_transfer = [(5, 5), (5, bigger_edge[1]), (bigger_edge[0], 5), (bigger_edge[0], bigger_edge[1])]
         self.after_transfer = np.float32(self.after_transfer)
-        self.after_size = (int(bigger_edge[0]), int(bigger_edge[1]))
+        self.after_size = (int(bigger_edge[0])+10, int(bigger_edge[1])+10)
 
     def transform(self):
         """Transformálás végrehajtása"""
 
         matrix = cv.getPerspectiveTransform(self.before_transfer, self.after_transfer)          # perspektíva számolása
-        self.result = cv.warpPerspective(self.masked_lplate, matrix, self.after_size)           # transformálás
-        _, self.result = cv.threshold(self.result, 127, 255, cv.THRESH_BINARY)
+        self.result = cv.warpPerspective(self.result, matrix, self.after_size)           # transformálás
+
+    def treshold(self):
+        self.result = cv.adaptiveThreshold(self.masked_lplate, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 13, 8)
+        kernel = np.ones((1, 1), np.uint8)
+        self.result = cv.morphologyEx(self.result, cv.MORPH_CLOSE, kernel)
+        kernel = np.ones((1, 1), np.uint8)
+        self.result = cv.morphologyEx(self.result, cv.MORPH_OPEN, kernel)
 
     def get_img(self):
         return self.result
@@ -133,7 +139,8 @@ class LicenceTrans:
         self.group_corners()                                    # sarokpontok csoporjának középpontja
         try:
             self.order_corners()                                # sarokpontok sorrendje
-            self.new_points()                                   # pontok eltolt pozíciójának számolása
+            self.new_points()                                   # pontok eltolt pozíciójának számolása#
+            self.treshold()
             self.transform()                                    # transformálás végrehajtása
         except:
             self.result= cv.imread('fail.jpg')
