@@ -125,14 +125,18 @@ class LicenceDet:
 
 
 if __name__ == "__main__":
-    test1 = LicenceDet('rszimg/rsz_test_10.jpg')
+    test1 = LicenceDet('rszimg/rsz_test_1.jpg')
     test1.gray()
     test1.bilfil()
     test1.canny()
     test1.contour_detect()
     test1.mask()
-    #test1.cut_the_mask()
+    test1.cut_the_mask()
     # test1.corners()
     # test1.show_corners()
     # test1.do_it()
-    test1.show()
+    save=test1.img
+    #cv.imwrite('doc_mask.png',save)
+    cv.imshow('proba',save)
+    cv.waitKey()
+    #test1.show()

@@ -22,7 +22,7 @@ def finaly_test(number):
         if len(text) == 0:
             print('Sikertelen')
         else:
-            print(text)
+            print('Number:', i+1, 'Lplate:', text)
 
 #step2step(66)
 finaly_test(66)

@@ -139,7 +139,7 @@ class LicenceTrans:
         self.group_corners()                                    # sarokpontok csoporjának középpontja
         try:
             self.order_corners()                                # sarokpontok sorrendje
-            self.new_points()                                   # pontok eltolt pozíciójának számolása#
+            self.new_points()                                    # pontok eltolt pozíciójának számolása#
             self.treshold()
             self.transform()                                    # transformálás végrehajtása
         except:
@@ -150,7 +150,7 @@ class LicenceTrans:
 if __name__ == "__main__":
     import license_plate_detecting as lpd
 
-    test = lpd.LicenceDet('rsz_test_1.jpg')
+    test = lpd.LicenceDet('rszim/rsz_test_1.jpg')
     test.do_it()
     #test.show_corners()
     sarok = test.get_corners()

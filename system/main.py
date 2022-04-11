@@ -1,3 +1,4 @@
+import cv2 as cv
 import license_plate_detecting as lpd
 import license_plate_transform as lpt
 import tesseract as tess
@@ -8,6 +9,7 @@ def get_licence_plate(picture):
 
     lplate = detect.get_img()
     corners = detect.get_corners()
+
 
     transform = lpt.LicenceTrans(lplate, corners)
     transform.do_it()
